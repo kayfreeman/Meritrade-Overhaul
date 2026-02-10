@@ -5,18 +5,20 @@ import { GoogleGenAI } from "@google/genai";
  * Helper to call Gemini with exponential backoff for retryable errors (like 429).
  */
 async function callGeminiWithRetry(
-  prompt: string,
+  prompt: any,
   model: string = 'gemini-3-flash-preview',
-  maxRetries: number = 3
+  maxRetries: number = 3,
+  systemInstruction?: string
 ): Promise<string | null> {
-  let delay = 2000; // Starting delay of 2 seconds
+  let delay = 2000;
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: model,
-        contents: prompt,
+        contents: typeof prompt === 'string' ? prompt : { parts: prompt },
+        config: systemInstruction ? { systemInstruction } : undefined
       });
       
       return response.text || null;
@@ -24,16 +26,12 @@ async function callGeminiWithRetry(
       const errorMsg = error?.message || "";
       const isQuotaError = errorMsg.includes("429") || errorMsg.includes("RESOURCE_EXHAUSTED");
       
-      // If it's a quota error and we have retries left, wait and try again
       if (isQuotaError && attempt < maxRetries - 1) {
-        console.warn(`Gemini API Quota exceeded. Retrying in ${delay}ms... (Attempt ${attempt + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2; // Exponential backoff
+        delay *= 2;
         continue;
       }
-      
-      console.error("Gemini API Error:", error);
-      throw error; // Re-throw if not a quota error or if retries are exhausted
+      throw error;
     }
   }
   return null;
@@ -64,5 +62,26 @@ export const getSmartAlert = async (marketUpdate: any) => {
     return await callGeminiWithRetry(prompt);
   } catch (e) {
     return null;
+  }
+};
+
+export const getSupportChatResponse = async (userMessage: string, history: { role: string, text: string }[]) => {
+  const systemInstruction = `You are the Meristem Wealth Assistant, an elite AI support agent for Meritrade NextGen, Meristem Nigeria's premier trading platform. 
+  Your tone is professional, helpful, and sophisticated. 
+  You assist with:
+  - Navigating the Meritrade platform.
+  - Explaining NGX trading rules (T+2 settlement, trading hours 10am-2:30pm).
+  - Meristem's wealth management services.
+  - Onboarding and KYC requirements.
+  Do NOT provide specific financial advice or price predictions. Refer users to Meristem advisors for complex wealth strategies. 
+  Always use 'Meristem' and 'Meritrade' correctly.`;
+
+  try {
+    const chatParts = history.map(h => ({ text: `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.text}` }));
+    chatParts.push({ text: `User: ${userMessage}` });
+    
+    return await callGeminiWithRetry(chatParts, 'gemini-3-flash-preview', 3, systemInstruction);
+  } catch (error) {
+    return "I apologize, I'm having trouble connecting to the wealth intelligence core. Please try again or contact our human support at +234 (0) 1 271 7350.";
   }
 };

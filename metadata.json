@@ -1,5 +1,5 @@
 {
-  "name": "Meritrade NextGen",
+  "name": "Meritrade NxtGEN V1.0",
   "description": "A state-of-the-art stockbroking and wealth management platform for Meristem Nigeria, featuring NDPA-compliant onboarding, real-time NGX market data, AI-powered portfolio analytics, and secure trade execution.",
   "requestFramePermissions": [
     "camera"

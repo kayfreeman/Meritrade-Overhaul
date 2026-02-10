@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MOCK_STOCKS } from '../constants';
 
 interface MarketData {
@@ -53,9 +53,9 @@ const ExchangeFeed: React.FC = () => {
       lowPrice: s.low,
       priceChange: s.change,
       changePercent: s.changePercent,
-      bidDepth: Math.floor(Math.random() * 500000) + 10000,
+      bidDepth: Math.floor(Math.random() * 1000000) + 50000,
       bestBid: s.price - 0.05,
-      offerDepth: Math.floor(Math.random() * 400000) + 5000,
+      offerDepth: Math.floor(Math.random() * 800000) + 30000,
       bestOffer: s.price + 0.05,
       category: CATEGORIES[index % CATEGORIES.length], // Distribute across categories
       lastTickDir: null,
@@ -69,11 +69,11 @@ const ExchangeFeed: React.FC = () => {
     const interval = setInterval(() => {
       setMarketStream(current => {
         return current.map(stock => {
-          if (Math.random() > 0.2) return stock; // 20% tick rate
+          if (Math.random() > 0.3) return stock; // 30% tick rate
 
-          const tick = (Math.random() - 0.5) * 0.12;
+          const tick = (Math.random() - 0.5) * 0.15;
           const newLastTrade = Number((stock.lastTrade + tick).toFixed(2));
-          const newQty = Math.floor(Math.random() * 3000) + 50;
+          const newQty = Math.floor(Math.random() * 5000) + 100;
           const newVol = stock.daysVol + newQty;
           const newChange = Number((newLastTrade - stock.refPrice).toFixed(2));
           const newPercent = Number(((newChange / stock.refPrice) * 100).toFixed(2));
@@ -91,19 +91,27 @@ const ExchangeFeed: React.FC = () => {
             changePercent: newPercent,
             bestBid: Number((newLastTrade - 0.02).toFixed(2)),
             bestOffer: Number((newLastTrade + 0.02).toFixed(2)),
-            bidDepth: stock.bidDepth + (Math.floor(Math.random() * 1000) - 500),
-            offerDepth: stock.offerDepth + (Math.floor(Math.random() * 1000) - 500),
+            bidDepth: Math.max(1000, stock.bidDepth + (Math.floor(Math.random() * 10000) - 5000)),
+            offerDepth: Math.max(1000, stock.offerDepth + (Math.floor(Math.random() * 10000) - 5000)),
             lastTickDir: tickDir,
             lastTickTimestamp: Date.now()
           };
         });
       });
-    }, 700);
+    }, 800);
 
     return () => clearInterval(interval);
   }, []);
 
   const filteredData = marketStream.filter(s => s.category === selectedCategory);
+
+  // Calculate max depths for visualization bars
+  const { maxBidDepth, maxOfferDepth } = useMemo(() => {
+    return {
+      maxBidDepth: Math.max(...filteredData.map(s => s.bidDepth), 1),
+      maxOfferDepth: Math.max(...filteredData.map(s => s.offerDepth), 1)
+    };
+  }, [filteredData]);
 
   const getFlashClass = (stock: MarketData) => {
     if (!stock.lastTickTimestamp || Date.now() - stock.lastTickTimestamp > 400) return '';
@@ -208,14 +216,24 @@ const ExchangeFeed: React.FC = () => {
                     <td className={`px-4 py-4 border-r border-gray-50 text-right font-bold ${stock.changePercent >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
                     </td>
-                    <td className="px-4 py-4 border-r border-gray-50 text-right text-emerald-700 bg-emerald-50/20">
-                      {stock.bidDepth.toLocaleString()}
+                    <td className="px-4 py-4 border-r border-gray-50 text-right text-emerald-800 bg-emerald-50/20 relative">
+                       {/* Bid Depth Bar */}
+                       <div 
+                         className="absolute inset-y-0 right-0 bg-emerald-500/10 transition-all duration-500" 
+                         style={{ width: `${(stock.bidDepth / maxBidDepth) * 100}%` }}
+                       />
+                       <span className="relative z-10">{stock.bidDepth.toLocaleString()}</span>
                     </td>
                     <td className={`px-4 py-4 border-r border-gray-50 text-right font-black text-emerald-700 bg-emerald-100/20 transition-all duration-500 ${flashClass && stock.lastTickDir === 'UP' ? 'bg-emerald-200' : ''}`}>
                       {stock.bestBid.toFixed(2)}
                     </td>
-                    <td className="px-4 py-4 border-r border-gray-50 text-right text-rose-700 bg-rose-50/20">
-                      {stock.offerDepth.toLocaleString()}
+                    <td className="px-4 py-4 border-r border-gray-50 text-right text-rose-800 bg-rose-50/20 relative">
+                       {/* Offer Depth Bar */}
+                       <div 
+                         className="absolute inset-y-0 left-0 bg-rose-500/10 transition-all duration-500" 
+                         style={{ width: `${(stock.offerDepth / maxOfferDepth) * 100}%` }}
+                       />
+                       <span className="relative z-10">{stock.offerDepth.toLocaleString()}</span>
                     </td>
                     <td className={`px-4 py-4 text-right font-black text-rose-700 bg-rose-100/20 transition-all duration-500 ${flashClass && stock.lastTickDir === 'DOWN' ? 'bg-rose-200' : ''}`}>
                       {stock.bestOffer.toFixed(2)}

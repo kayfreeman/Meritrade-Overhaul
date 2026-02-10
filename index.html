@@ -14,6 +14,13 @@
             font-family: 'Inter', sans-serif;
             background-color: #f9fafb;
         }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1.05); }
+            50% { opacity: 0.9; transform: scale(1.08); }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 20s ease-in-out infinite;
+        }
     </style>
 <script type="importmap">
 {
