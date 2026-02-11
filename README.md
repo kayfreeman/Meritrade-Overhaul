@@ -183,6 +183,3 @@ Designed to support:
 
 ---
 
-## License
-**Proprietary. All rights reserved.**
-
