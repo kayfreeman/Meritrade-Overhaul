@@ -171,7 +171,7 @@ Ready for:
 ---
 
 ## License
-This project documentation is proprietary and intended for strategic architecture and modernization planning.
+This project documentation is Open sourced and intended to share what i work on.
 
 ---
 
