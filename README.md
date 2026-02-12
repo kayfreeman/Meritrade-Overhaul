@@ -1,4 +1,5 @@
 <img width="451" height="112" alt="Logo" src="https://github.com/user-attachments/assets/2d5e8b9b-a124-4580-89d8-4835b9f5b13a" />
+
 # NGX Digital Brokerage Platform  
 ### A High-Performance, Resilient, and Scalable Trading Infrastructure for the Nigerian Capital Market
 ---
